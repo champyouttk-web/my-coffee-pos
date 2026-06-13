@@ -13,10 +13,16 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* สไตล์เพิ่มเติมสำหรับระบบ ยุบ-ขยาย สต็อก */
+        /* สไตล์สำหรับระบบ ยุบ-ขยาย ของทั้งตะกร้าและสต็อก */
         summary::-webkit-details-marker { display: none; }
         summary { list-style: none; }
         summary:hover { opacity: 0.9; }
+
+        /* ตกแต่ง Scrollbar เล็กๆ ให้กับตะกร้าออเดอร์เวลาไอเทมเยอะ */
+        .cart-scrollbar::-webkit-scrollbar { width: 5px; }
+        .cart-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .cart-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .cart-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased">
@@ -131,17 +137,20 @@
         </div>
 
         <div class="w-2/5 bg-white shadow-2xl flex flex-col h-full border-l border-slate-100">
-            <div class="p-6 border-b border-slate-100 flex-1 overflow-y-auto no-scrollbar">
-                <div class="flex justify-between items-center mb-6">
+            <details class="p-6 border-b border-slate-100 flex flex-col flex-1 overflow-hidden cursor-pointer select-none" open>
+                <summary class="flex justify-between items-center mb-4 flex-shrink-0">
                     <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">🛒 ตะกร้าออเดอร์</h2>
-                    <button onclick="fetchDataFromCloud()" class="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-all">🔄 ซิงค์คลาวด์</button>
-                </div>
-                <div id="cart-items" class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] text-slate-400 font-normal lowercase">(คลิกเพื่อ ยุบ/ขยาย)</span>
+                        <button onclick="event.stopPropagation(); fetchDataFromCloud()" class="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-all">🔄 ซิงค์คลาวด์</button>
+                    </div>
+                </summary>
+                <div id="cart-items" class="space-y-3 overflow-y-auto flex-1 pr-1 cart-scrollbar cursor-default" onclick="event.stopPropagation();">
                     <p class="text-slate-400 text-center py-12 text-xs">ยังไม่มีรายการสินค้าในตะกร้า</p>
                 </div>
-            </div>
+            </details>
 
-            <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
+            <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-4 flex-shrink-0">
                 <div class="flex justify-between text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">
                     <span class="text-slate-500 font-medium text-sm">รวมยอดเงินทั้งสิ้น:</span>
                     <span class="text-xl text-amber-800"><span id="total-price">0</span> .-</span>
@@ -163,7 +172,7 @@
                 </button>
             </div>
 
-            <details class="p-5 bg-slate-900 text-white cursor-pointer select-none" open>
+            <details class="p-5 bg-slate-900 text-white cursor-pointer select-none flex-shrink-0" open>
                 <summary class="text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
                     <span class="flex items-center gap-1.5">🟢 มอนิเตอร์สต็อกปัจจุบัน</span>
                     <span class="text-[10px] text-slate-500 lowercase font-normal">(คลิกเพื่อ ยุบ/ขยาย)</span>
@@ -544,9 +553,9 @@
                             <div class="text-amber-700 font-medium mt-0.5">${item.price} บ.</div>
                         </div>
                         <div class="flex items-center space-x-1.5 w-1/2 justify-end">
-                            <button onclick="changeQuantity(${item.id}, -1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all">-</button>
+                            <button onclick="event.stopPropagation(); changeQuantity(${item.id}, -1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all">-</button>
                             <span class="font-bold w-4 text-center text-slate-800">${item.quantity}</span>
-                            <button onclick="changeQuantity(${item.id}, 1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all">+</button>
+                            <button onclick="event.stopPropagation(); changeQuantity(${item.id}, 1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all">+</button>
                             <span class="font-bold ml-2 text-right text-slate-700">${subTotal}.-</span>
                         </div>
                     </div>
