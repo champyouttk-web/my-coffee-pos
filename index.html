@@ -134,7 +134,7 @@
       
       <div class="p-6 border-b border-slate-100 flex flex-col flex-1 overflow-hidden">
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
-          <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">🛒 ตะกร้าออเดอร์</h2>
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">🛒 ต้ากร้าออเดอร์</h2>
           <button onclick="fetchDataFromCloud()" class="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-all">🔄 ซิงค์คลาวด์</button>
         </div>
         <div id="cart-items" class="space-y-3 overflow-y-auto flex-1 pr-1 cart-scrollbar">
@@ -193,7 +193,9 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyjY6le9-fsN94h3IyWlC8hu3UvkqMN_1AS7zQQZBs97g7ZnLQSTbSJFq5fXAL9YIOlqw/exec";
-    const ADMIN_PASSWORD = "2026";
+    
+    // 🔒 ลบรหัสผ่านออกจากตรงนี้แล้ว! เปลี่ยนมาใช้ระบบเซสชันชั่วคราวในหน่วยความจำแทน (คลิกขวาหาไม่เจอแน่นอน)
+    let sessionPassword = ""; 
 
     let inventory = {};
     let ingredientNames = {};
@@ -234,17 +236,14 @@
       }
     }
 
-    // 🔄 ดึงข้อมูลล่าสุดจาก Cloud (ใช้แบบนี้เพื่อป้องกันสภาวะแข่งกัน)
     async function fetchDataFromCloud() {
       try {
         const response = await fetch(API_URL);
         const data = await response.json();
-        
         inventory = data.inventory || {};
         ingredientNames = data.ingNames || {};
         products = data.products || [];
         salesHistory = data.sales || [];
-        
         stockLastUpdate = getNowString();
         renderAll();
       } catch (error) {
@@ -252,10 +251,14 @@
       }
     }
 
-    // 🚀 ฟังก์ชันหลักในการส่งคำสั่งทำงานแบบแยก Transaction (ไม่เซฟทับมั่วซั่วอีกต่อไป)
     async function executeCloudAction(payload) {
       showLoading(true);
       try {
+        // 🔐 แนบรหัสผ่านเซสชันติดไปกับคำสั่งจัดการหลังบ้านโดยอัตโนมัติ
+        if (!payload.password && sessionPassword) {
+          payload.password = sessionPassword;
+        }
+
         const response = await fetch(API_URL, {
           method: "POST", 
           redirect: "follow", 
@@ -264,11 +267,10 @@
         const serverData = await response.json();
         
         if (serverData.status === "error") {
-          alert("❌ เกิดข้อผิดพลาดจากคลาวด์: " + serverData.message);
+          alert("❌ เกิดข้อผิดพลาด: " + serverData.message);
           return false;
         }
         
-        // อัปเดตฐานข้อมูลในเครื่องด้วยสถานะล่าสุดที่ได้คืนมาจากเซิร์ฟเวอร์ทันที
         inventory = serverData.inventory;
         ingredientNames = serverData.ingNames;
         products = serverData.products;
@@ -279,7 +281,7 @@
         return true;
       } catch (error) {
         console.error("Transaction Cloud Error:", error);
-        alert("ทำรายการไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตครับ");
+        alert("ทำรายการไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตครับ");
         return false;
       } finally {
         showLoading(false);
@@ -314,14 +316,41 @@
       }
     }
 
-    function switchMode(mode) {
+    // 🔐 ปรับปรุงให้ยืนยันสิทธิ์ผ่าน Cloud แบบ Async (ปลอดภัย ไม่ล็อกโค้ดหน้าเว็บ)
+    async function switchMode(mode) {
       if (mode === 'admin' || mode === 'report') {
-        const inputPwd = prompt("🔒 กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบหลังบ้าน:");
-        if (inputPwd !== ADMIN_PASSWORD) {
-          alert("❌ รหัสผ่านไม่ถูกต้อง! คุณไม่มีสิทธิ์เข้าถึงส่วนนี้");
-          return;
+        if (!sessionPassword) {
+          const inputPwd = prompt("🔒 กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบหลังบ้าน:");
+          if (!inputPwd) return;
+          
+          showLoading(true);
+          try {
+            const res = await fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify({ action: "verifyPassword", password: inputPwd })
+            });
+            const checkResult = await res.json();
+            showLoading(false);
+
+            if (checkResult.status === "error") {
+              alert("❌ รหัสผ่านไม่ถูกต้อง! คุณไม่มีสิทธิ์เข้าถึงส่วนนี้");
+              return;
+            }
+            
+            // รหัสผ่านถูกต้อง บันทึกเก็บไว้ใน Session ความจำชั่วคราว
+            sessionPassword = inputPwd;
+            inventory = checkResult.inventory;
+            ingredientNames = checkResult.ingNames;
+            products = checkResult.products;
+            salesHistory = checkResult.sales;
+          } catch (e) {
+            showLoading(false);
+            alert("เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว");
+            return;
+          }
         }
       }
+
       currentMode = mode;
       document.getElementById('pos-view').classList.add('hidden');
       document.getElementById('admin-view').classList.add('hidden');
@@ -558,13 +587,10 @@
 
     async function deleteProduct(id) {
       const inputPwd = prompt("🔒 กรุณากรอกรหัสผ่านผู้ดูแลเพื่อยืนยันการลบสินค้า:");
-      if (inputPwd !== ADMIN_PASSWORD) {
-        alert("❌ รหัสผ่านไม่ถูกต้อง! คุณไม่มีสิทธิ์ลบสินค้า");
-        return;
-      }
-      if (confirm("ลบเมนูเครื่องดื่มรายการนี้ออกถาวรใช่ไหม?")) {
-        await executeCloudAction({ action: "deleteProduct", id: id });
-      }
+      if (!inputPwd) return;
+      
+      // ส่งรหัสผ่านที่พนักงานกรอกไปให้คลาวด์เช็คตรงๆ
+      await executeCloudAction({ action: "deleteProduct", id: id, password: inputPwd });
     }
 
     function addToCart(productId) {
@@ -672,7 +698,6 @@
       const methodText = paymentType === 'cash' ? 'เงินสด' : 'โอนเงิน';
       const itemsSummary = cart.map(item => `${item.name} x ${item.quantity}`).join(', ') + ` [${methodText}]`;
       
-      // ส่งข้อมูลตระกร้าสินค้าไปให้ Server ประมวลผลและตัดสต็อกภายใต้ Lock ป้องกันข้อมูลชนกัน
       const success = await executeCloudAction({
         action: "checkout",
         billId: billId,
@@ -687,7 +712,6 @@
         document.getElementById('cash-received').value = '';
         document.getElementById('discount-val').value = '';
         updateCart();
-        
         if (paymentType === 'cash') {
           alert(`🎉 ชำระเงินสดสำเร็จ! เงินทอน ${(cash - total).toFixed(2)} บาท`);
         } else {
@@ -696,14 +720,11 @@
       }
     }
 
-    // ⏳ ดึงข้อมูลรอบแรกเมื่อเปิดหน้าจอ
     window.onload = async () => {
       showLoading(true);
       await fetchDataFromCloud();
       showLoading(false);
-      
-      // 🔄 Auto-Sync: ดึงสถานะสต็อก/เมนูอัตโนมัติเบื้องหลังทุก 30 วินาที เพื่อให้พนักงาน 3-5 คนเห็นข้อมูลอัปเดตตลอดเวลา
-      setInterval(fetchDataFromCloud, 30000);
+      setInterval(fetchDataFromCloud, 30000); // Auto-Sync สต็อกทุกๆ 30 วินาที
     };
   </script>
 </body>
