@@ -134,7 +134,7 @@
       
       <div class="p-6 border-b border-slate-100 flex flex-col flex-1 overflow-hidden">
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
-          <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">🛒 ต้ากร้าออเดอร์</h2>
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-1.5">🛒 ตะกร้าออเดอร์</h2>
           <button onclick="fetchDataFromCloud()" class="text-[11px] bg-slate-100 text-slate-600 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-slate-200 transition-all">🔄 ซิงค์คลาวด์</button>
         </div>
         <div id="cart-items" class="space-y-3 overflow-y-auto flex-1 pr-1 cart-scrollbar">
@@ -192,9 +192,10 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyjY6le9-fsN94h3IyWlC8hu3UvkqMN_1AS7zQQZBs97g7ZnLQSTbSJFq5fXAL9YIOlqw/exec";
+    // 🔄 อัปเดตลิงก์เซิร์ฟเวอร์ปลายทางตรงกับ Google Apps Script ล่าสุดของคุณแล้วครับ
+    const API_URL = "https://script.google.com/macros/s/AKfycbxovG2UggxwpALh8ppGHi-XZNk35DyqSgOy3mWqUxyCGs-WudBBb2Cf2aK8mDZhB7Aa/exec";
     
-    // 🔒 ลบรหัสผ่านออกจากตรงนี้แล้ว! เปลี่ยนมาใช้ระบบเซสชันชั่วคราวในหน่วยความจำแทน (คลิกขวาหาไม่เจอแน่นอน)
+    // 🔒 ย้ายรหัสผ่านออกจากหน้าเว็บมาใช้หน่วยความจำจำลอง (Session ลับ) แทนแล้วครับ ปลอดภัยจากสายตาคนแอบดูโค้ดแน่นอน
     let sessionPassword = ""; 
 
     let inventory = {};
@@ -240,10 +241,12 @@
       try {
         const response = await fetch(API_URL);
         const data = await response.json();
+        
         inventory = data.inventory || {};
         ingredientNames = data.ingNames || {};
         products = data.products || [];
         salesHistory = data.sales || [];
+        
         stockLastUpdate = getNowString();
         renderAll();
       } catch (error) {
@@ -254,7 +257,6 @@
     async function executeCloudAction(payload) {
       showLoading(true);
       try {
-        // 🔐 แนบรหัสผ่านเซสชันติดไปกับคำสั่งจัดการหลังบ้านโดยอัตโนมัติ
         if (!payload.password && sessionPassword) {
           payload.password = sessionPassword;
         }
@@ -267,7 +269,7 @@
         const serverData = await response.json();
         
         if (serverData.status === "error") {
-          alert("❌ เกิดข้อผิดพลาด: " + serverData.message);
+          alert("❌ เกิดข้อผิดพลาดจากคลาวด์: " + serverData.message);
           return false;
         }
         
@@ -281,7 +283,7 @@
         return true;
       } catch (error) {
         console.error("Transaction Cloud Error:", error);
-        alert("ทำรายการไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตครับ");
+        alert("ทำรายการไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตครับ");
         return false;
       } finally {
         showLoading(false);
@@ -316,13 +318,12 @@
       }
     }
 
-    // 🔐 ปรับปรุงให้ยืนยันสิทธิ์ผ่าน Cloud แบบ Async (ปลอดภัย ไม่ล็อกโค้ดหน้าเว็บ)
     async function switchMode(mode) {
       if (mode === 'admin' || mode === 'report') {
         if (!sessionPassword) {
           const inputPwd = prompt("🔒 กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบหลังบ้าน:");
           if (!inputPwd) return;
-          
+
           showLoading(true);
           try {
             const res = await fetch(API_URL, {
@@ -336,8 +337,7 @@
               alert("❌ รหัสผ่านไม่ถูกต้อง! คุณไม่มีสิทธิ์เข้าถึงส่วนนี้");
               return;
             }
-            
-            // รหัสผ่านถูกต้อง บันทึกเก็บไว้ใน Session ความจำชั่วคราว
+
             sessionPassword = inputPwd;
             inventory = checkResult.inventory;
             ingredientNames = checkResult.ingNames;
@@ -589,7 +589,6 @@
       const inputPwd = prompt("🔒 กรุณากรอกรหัสผ่านผู้ดูแลเพื่อยืนยันการลบสินค้า:");
       if (!inputPwd) return;
       
-      // ส่งรหัสผ่านที่พนักงานกรอกไปให้คลาวด์เช็คตรงๆ
       await executeCloudAction({ action: "deleteProduct", id: id, password: inputPwd });
     }
 
@@ -724,7 +723,7 @@
       showLoading(true);
       await fetchDataFromCloud();
       showLoading(false);
-      setInterval(fetchDataFromCloud, 30000); // Auto-Sync สต็อกทุกๆ 30 วินาที
+      setInterval(fetchDataFromCloud, 30000); // Auto-Sync ทุกๆ 30 วินาที
     };
   </script>
 </body>
