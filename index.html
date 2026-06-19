@@ -758,58 +758,66 @@ function updateCart() {
     }
 
     // ฟังก์ชันจัดการ Modal สรุปยอด
-    function openSummaryModal() {
-      // 1. หายอดขายของวันนี้ (ใช้วิธีดึงเฉพาะบิล 20 รายการล่าสุด หรือเช็ควันที่ให้ยืดหยุ่นขึ้น)
-      const today = getNowString().split(' ')[0]; 
-      // *หมายเหตุ: หากบิลเก่าในชีตเซฟมาเป็น 2569-06-19T... ระบบก็ยังบวกเลขจากยอดรวมที่ดึงมาแสดงบนหน้าจอได้ครับ
-      const todaySales = salesHistory.filter(bill => {
-          return String(bill.datetime).includes(today) || String(bill.datetime).includes("2569-06-19"); 
-      });
-      
-      // 2. สรุปรวมจำนวนสินค้าที่ขายได้
-      let itemCounts = {};
-      todaySales.forEach(sale => {
-        let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
-        itemsStr = itemsStr.split('📝')[0]; 
-        
-        const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
-        items.forEach(itemStr => {
-           const parts = itemStr.split(' x ');
-           if (parts.length === 2) {
-              const name = parts[0].trim();
-              const qty = parseInt(parts[1], 10) || 0;
-              itemCounts[name] = (itemCounts[name] || 0) + qty;
-           }
-        });
-      });
+function openSummaryModal() {
+  // 1. ดึงวันที่ปัจจุบันของไทย (YYYY-MM-DD)
+  const today = getNowString().split(' ')[0]; 
+  
+  // 2. กรองเฉพาะบิลของวันนี้เท่านั้น (โดยเช็คจาก string วันที่)
+  const todaySales = salesHistory.filter(bill => {
+      return String(bill.datetime).startsWith(today);
+  });
+  
+  // 3. ดึงเวลาบิลแรก และบิลล่าสุดของวันนี้
+  let timeText = "ยังไม่มีออเดอร์";
+  if (todaySales.length > 0) {
+      const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
+      const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
+      timeText = `${firstTime} ถึง ${lastTime} น.`;
+  }
+  
+  // 4. สรุปรวมจำนวนสินค้าที่ขายได้
+  let itemCounts = {};
+  todaySales.forEach(sale => {
+    let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
+    itemsStr = itemsStr.split('📝')[0]; 
+    
+    const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
+    items.forEach(itemStr => {
+       const parts = itemStr.split(' x ');
+       if (parts.length === 2) {
+          const name = parts[0].trim();
+          const qty = parseInt(parts[1], 10) || 0;
+          itemCounts[name] = (itemCounts[name] || 0) + qty;
+       }
+    });
+  });
 
-      // 3. จัดข้อความรายการสินค้า
-      let itemsText = "";
-      for (const [name, qty] of Object.entries(itemCounts)) {
-        itemsText += `- ${name} : ${qty}\n`;
-      }
-      if (itemsText === "") itemsText = "- ยังไม่มีรายการสินค้า\n(บิลเก่าอาจจะรูปแบบไม่ตรงกับระบบใหม่ ไม่ต้องห่วงบิลถัดไปจะนับได้ปกติครับ)\n";
+  // 5. จัดข้อความรายการสินค้า
+  let itemsText = "";
+  for (const [name, qty] of Object.entries(itemCounts)) {
+    itemsText += `- ${name} : ${qty}\n`;
+  }
+  if (itemsText === "") itemsText = "- ยังไม่มีรายการขายวันนี้\n";
 
-      // 4. ดึงยอดจากหน้าจอ
-      const cash = document.getElementById('dash-cash').innerText;
-      const transfer = document.getElementById('dash-transfer').innerText;
-      const total = document.getElementById('dash-total').innerText;
+  // 6. ดึงยอดจากกล่อง Dashboard ที่แสดงผลอยู่บนหน้าจอ
+  const cash = document.getElementById('dash-cash').innerText;
+  const transfer = document.getElementById('dash-transfer').innerText;
+  const total = document.getElementById('dash-total').innerText;
 
-      // 5. สร้าง Template ข้อความ
-      const template = `📊 สรุปยอดขายประจำวัน
-⏰ เวลา: _____ ถึง _____
+  // 7. สร้าง Template ข้อความ (ข้อมูลจะดึงมาตามจริง)
+  const template = `📊 สรุปยอดขายประจำวัน (${today})
+⏰ เวลาทำการ: ${timeText}
 
 💵 ยอดเงินสด: ${cash} บาท
 📱 ยอดโอน: ${transfer} บาท
-🏷️ ส่วนลดรวม: _____ บาท
 💰 ยอดสุทธิรวม: ${total} บาท
 
-☕ รายการสินค้าที่ขายได้:
+☕ รายการสินค้าที่ขายได้วันนี้:
 ${itemsText}`;
 
-      document.getElementById('summary-text').value = template;
-      document.getElementById('summary-modal').classList.remove('hidden');
-    }
+  document.getElementById('summary-text').value = template;
+  document.getElementById('summary-modal').classList.remove('hidden');
+}
 
     function closeSummaryModal() {
       document.getElementById('summary-modal').classList.add('hidden');
