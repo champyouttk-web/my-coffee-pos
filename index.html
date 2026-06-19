@@ -14,7 +14,7 @@
     summary { list-style: none; }
     summary:hover { opacity: 0.9; }
     
-    .cart-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .cart-scrollbar::-webkit-scrollbar { width: 5px; }
     .cart-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
     .cart-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .cart-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -29,7 +29,7 @@
 
   <div class="flex h-screen overflow-hidden w-full">
     <div id="left-panel" class="w-3/5 p-8 overflow-y-auto flex flex-col h-full no-scrollbar transition-all duration-300">
-      <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-5">
+      <div class="flex justify-between items-center mb-8 border-b border-slate-200 pb-5">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight" id="page-title">☕ Coffee Shop POS</h1>
           <p class="text-xs text-slate-400 mt-1">ระบบจัดการหน้าร้านเชื่อมต่อ Google Sheets (Multi-User Optimized)</p>
@@ -103,16 +103,16 @@
       </div>
 
       <div id="report-view" class="hidden space-y-4">
-        <div class="grid grid-cols-3 gap-4 mb-2">
-          <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-2xs">
+        <div class="grid grid-cols-3 gap-4 mb-2 text-xs">
+          <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
             <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">💵 ยอดเงินสดวันนี้</p>
             <p class="text-xl font-extrabold text-emerald-900 mt-1"><span id="dash-cash">0</span> <span class="text-xs font-normal text-emerald-600">บาท</span></p>
           </div>
-          <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-2xs">
+          <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-sm">
             <p class="text-[10px] font-bold text-blue-700 uppercase tracking-wide">📱 ยอดโอนเงินวันนี้</p>
             <p class="text-xl font-extrabold text-blue-900 mt-1"><span id="dash-transfer">0</span> <span class="text-xs font-normal text-blue-600">บาท</span></p>
           </div>
-          <div class="bg-amber-950 p-4 rounded-xl shadow-2xs text-white">
+          <div class="bg-amber-950 p-4 rounded-2xl shadow-sm text-white">
             <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wide">🚀 ยอดรวมทั้งหมดวันนี้</p>
             <p class="text-xl font-extrabold text-amber-300 mt-1"><span id="dash-total">0</span> <span class="text-xs font-normal text-amber-400">บาท</span></p>
           </div>
@@ -121,12 +121,19 @@
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div class="flex justify-between items-center mb-6">
             <div>
-              <h2 class="text-base font-bold text-slate-800">📊 ประวัติและสรุปรายงานยอดขายสะสม</h2>
+              <h2 class="text-base font-bold text-slate-800">📊 สรุปรายงานยอดขายสะสม</h2>
               <p class="text-2xl font-extrabold text-emerald-600 mt-1"><span id="report-total-sales">0</span> <span class="text-sm font-normal text-slate-400">บาท</span></p>
             </div>
-            <button onclick="clearSalesHistory()" class="bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer">
-              ❌ ล้างประวัติการขายประจำวัน
-            </button>
+            
+            <div class="flex gap-2">
+              <button onclick="openSummaryModal()" class="bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-bold py-2 px-4 rounded-xl transition-all shadow-sm cursor-pointer border border-amber-200">
+                📋 สร้างข้อความสรุปยอด
+              </button>
+              <button onclick="clearSalesHistory()" class="bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer border border-red-100">
+                ❌ ล้างประวัติ
+              </button>
+            </div>
+
           </div>
           <div class="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left border-collapse text-xs">
@@ -156,7 +163,7 @@
         </div>
       </div>
 
-      <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-3 flex-shrink-0">
+      <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-4 flex-shrink-0">
         <div class="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm text-xs">
           <div class="flex justify-between items-center font-bold text-slate-600">
             <span>ส่วนลดหน้าร้าน</span>
@@ -207,8 +214,22 @@
     </div>
   </div>
 
+  <div id="summary-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-2xl w-[28rem] shadow-xl">
+      <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">📋 ข้อความสรุปยอดประจำวัน</h3>
+      <p class="text-[11px] text-slate-500 mb-3">แก้ไขข้อมูลตรงช่องว่าง (____) ให้เรียบร้อยก่อนกดคัดลอก</p>
+      
+      <textarea id="summary-text" class="w-full h-64 p-3 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-amber-500 mb-4 bg-slate-50 leading-relaxed"></textarea>
+      
+      <div class="flex gap-3">
+        <button onclick="copySummary()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm">📋 คัดลอกข้อความ</button>
+        <button onclick="closeSummaryModal()" class="w-24 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-xs font-bold transition-all">ปิด</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 🔗 แก้ไขตรงนี้เป็นลิงก์ Web App Google Apps Script ของคุณ
+    // 🔗 ลิงก์ใหม่ของคุณใส่ไว้ให้เรียบร้อยแล้วครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbxO3YRTyiyXvwx2_bcWM0Vb2ksNyhoDL_gA9bvSKaIOgoRmK0Fj5O1GOparmfl8TIIewQ/exec";
     const ADMIN_PASSWORD = "2026";
 
@@ -301,7 +322,6 @@
       }
     }
 
-    // 📅 ฟังก์ชันล็อกเวลาปัจจุบันล็อกเป็นเวลาประเทศไทย (+7 ชั่วโมง) อย่างแม่นยำ
     function getNowString() {
       const now = new Date();
       const tzOffset = 7 * 60; 
@@ -704,10 +724,8 @@
       const billId = Math.floor(1000 + Math.random() * 9000);
       const methodText = paymentType === 'cash' ? 'เงินสด' : 'โอนเงิน';
       
-      // ดึงโน้ตส่วนลดจากช่องกรอก
       const discountNote = document.getElementById('discount-note')?.value.trim() || "";
       
-      // รวมข้อความบิลเข้าด้วยกันพร้อมหมายเหตุส่วนลด
       const itemsSummary = cart.map(item => `${item.name} x ${item.quantity}`).join(', ') + 
                            ` [${methodText}]` + 
                            (discountNote ? ` 📝 โน้ตส่วนลด: ${discountNote}` : '');
@@ -715,7 +733,7 @@
       const success = await executeCloudAction({
         action: "checkout",
         billId: billId,
-        datetime: getNowString(), // ใช้เวลาประเทศไทย
+        datetime: getNowString(),
         itemsSummary: itemsSummary,
         total: total,
         cart: cart
@@ -725,12 +743,9 @@
         cart = [];
         document.getElementById('cash-received').value = '';
         document.getElementById('discount-val').value = '';
-        
-        // ล้างช่องกรอกโน้ตให้พร้อมสำหรับออเดอร์ถัดไป
         if(document.getElementById('discount-note')) {
           document.getElementById('discount-note').value = '';
         }
-        
         updateCart();
         
         if (paymentType === 'cash') {
@@ -741,12 +756,79 @@
       }
     }
 
+    // ฟังก์ชันจัดการ Modal สรุปยอด
+    function openSummaryModal() {
+      // 1. หายอดขายของวันนี้ (ใช้วิธีดึงเฉพาะบิล 20 รายการล่าสุด หรือเช็ควันที่ให้ยืดหยุ่นขึ้น)
+      const today = getNowString().split(' ')[0]; 
+      // *หมายเหตุ: หากบิลเก่าในชีตเซฟมาเป็น 2569-06-19T... ระบบก็ยังบวกเลขจากยอดรวมที่ดึงมาแสดงบนหน้าจอได้ครับ
+      const todaySales = salesHistory.filter(bill => {
+          return String(bill.datetime).includes(today) || String(bill.datetime).includes("2569-06-19"); 
+      });
+      
+      // 2. สรุปรวมจำนวนสินค้าที่ขายได้
+      let itemCounts = {};
+      todaySales.forEach(sale => {
+        let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
+        itemsStr = itemsStr.split('📝')[0]; 
+        
+        const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
+        items.forEach(itemStr => {
+           const parts = itemStr.split(' x ');
+           if (parts.length === 2) {
+              const name = parts[0].trim();
+              const qty = parseInt(parts[1], 10) || 0;
+              itemCounts[name] = (itemCounts[name] || 0) + qty;
+           }
+        });
+      });
+
+      // 3. จัดข้อความรายการสินค้า
+      let itemsText = "";
+      for (const [name, qty] of Object.entries(itemCounts)) {
+        itemsText += `- ${name} : ${qty}\n`;
+      }
+      if (itemsText === "") itemsText = "- ยังไม่มีรายการสินค้า\n(บิลเก่าอาจจะรูปแบบไม่ตรงกับระบบใหม่ ไม่ต้องห่วงบิลถัดไปจะนับได้ปกติครับ)\n";
+
+      // 4. ดึงยอดจากหน้าจอ
+      const cash = document.getElementById('dash-cash').innerText;
+      const transfer = document.getElementById('dash-transfer').innerText;
+      const total = document.getElementById('dash-total').innerText;
+
+      // 5. สร้าง Template ข้อความ
+      const template = `📊 สรุปยอดขายประจำวัน
+⏰ เวลา: _____ ถึง _____
+
+💵 ยอดเงินสด: ${cash} บาท
+📱 ยอดโอน: ${transfer} บาท
+🏷️ ส่วนลดรวม: _____ บาท
+💰 ยอดสุทธิรวม: ${total} บาท
+
+☕ รายการสินค้าที่ขายได้:
+${itemsText}`;
+
+      document.getElementById('summary-text').value = template;
+      document.getElementById('summary-modal').classList.remove('hidden');
+    }
+
+    function closeSummaryModal() {
+      document.getElementById('summary-modal').classList.add('hidden');
+    }
+
+    function copySummary() {
+      const textToCopy = document.getElementById('summary-text').value;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("✅ คัดลอกข้อความเรียบร้อยแล้ว สามารถนำไปวางใน LINE ได้เลยครับ");
+        closeSummaryModal();
+      }).catch(err => {
+        alert("❌ ไม่สามารถคัดลอกได้ กรุณากดเลือกข้อความและคัดลอกเองครับ");
+      });
+    }
+
     window.onload = async () => {
       showLoading(true);
       await fetchDataFromCloud();
       showLoading(false);
       
-      // Auto-Sync ดึงข้อมูลเบื้องหลังทุก 30 วินาที
       setInterval(fetchDataFromCloud, 30000);
     };
   </script>
