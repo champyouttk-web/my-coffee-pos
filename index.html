@@ -758,21 +758,23 @@
 
     // ฟังก์ชันจัดการ Modal สรุปยอด
 function openSummaryModal() {
-  // 1. หายอดขายของวันนี้ (อิงจากวันที่ไทย)
+  // 1. ดึงวันที่ปัจจุบันของไทย (YYYY-MM-DD)
   const today = getNowString().split(' ')[0]; 
+  
+  // 2. กรองเฉพาะบิลของวันนี้เท่านั้น (โดยเช็คจาก string วันที่)
   const todaySales = salesHistory.filter(bill => {
-      return String(bill.datetime).includes(today) || String(bill.datetime).includes("2569-06-19"); 
+      return String(bill.datetime).startsWith(today);
   });
   
-  // 2. ดึงเวลาบิลแรก และบิลล่าสุดของวันนี้มาคำนวณให้อัตโนมัติ
+  // 3. ดึงเวลาบิลแรก และบิลล่าสุดของวันนี้
   let timeText = "ยังไม่มีออเดอร์";
   if (todaySales.length > 0) {
       const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
       const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
-      timeText = `${firstTime} น. ถึง ${lastTime} น.`;
+      timeText = `${firstTime} ถึง ${lastTime} น.`;
   }
   
-  // 3. สรุปรวมจำนวนสินค้าที่ขายได้
+  // 4. สรุปรวมจำนวนสินค้าที่ขายได้
   let itemCounts = {};
   todaySales.forEach(sale => {
     let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
@@ -789,27 +791,27 @@ function openSummaryModal() {
     });
   });
 
-  // 4. จัดข้อความรายการสินค้า
+  // 5. จัดข้อความรายการสินค้า
   let itemsText = "";
   for (const [name, qty] of Object.entries(itemCounts)) {
     itemsText += `- ${name} : ${qty}\n`;
   }
-  if (itemsText === "") itemsText = "- ยังไม่มีรายการสินค้า\n";
+  if (itemsText === "") itemsText = "- ยังไม่มีรายการขายวันนี้\n";
 
-  // 5. ดึงยอดจากหน้าจอมาใส่ให้อัตโนมัติ
+  // 6. ดึงยอดจากกล่อง Dashboard ที่แสดงผลอยู่บนหน้าจอ
   const cash = document.getElementById('dash-cash').innerText;
   const transfer = document.getElementById('dash-transfer').innerText;
   const total = document.getElementById('dash-total').innerText;
 
-  // 6. สร้าง Template ข้อความส่ง LINE แบบไม่ต้องพิมพ์อะไรเพิ่ม
-  const template = `📊 สรุปยอดขายประจำวัน
-⏰ เวลา: ${timeText}
+  // 7. สร้าง Template ข้อความ (ข้อมูลจะดึงมาตามจริง)
+  const template = `📊 สรุปยอดขายประจำวัน (${today})
+⏰ เวลาทำการ: ${timeText}
 
 💵 ยอดเงินสด: ${cash} บาท
 📱 ยอดโอน: ${transfer} บาท
 💰 ยอดสุทธิรวม: ${total} บาท
 
-☕ รายการสินค้าที่ขายได้:
+☕ รายการสินค้าที่ขายได้วันนี้:
 ${itemsText}`;
 
   document.getElementById('summary-text').value = template;
