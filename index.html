@@ -14,7 +14,7 @@
     summary { list-style: none; }
     summary:hover { opacity: 0.9; }
     
-    .cart-scrollbar::-webkit-scrollbar { width: 5px; }
+    .cart-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .cart-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
     .cart-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .cart-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -29,7 +29,7 @@
 
   <div class="flex h-screen overflow-hidden w-full">
     <div id="left-panel" class="w-3/5 p-8 overflow-y-auto flex flex-col h-full no-scrollbar transition-all duration-300">
-      <div class="flex justify-between items-center mb-8 border-b border-slate-200 pb-5">
+      <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-5">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight" id="page-title">☕ Coffee Shop POS</h1>
           <p class="text-xs text-slate-400 mt-1">ระบบจัดการหน้าร้านเชื่อมต่อ Google Sheets (Multi-User Optimized)</p>
@@ -103,16 +103,16 @@
       </div>
 
       <div id="report-view" class="hidden space-y-4">
-        <div class="grid grid-cols-3 gap-4 mb-2 text-xs">
-          <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-2xs">
+        <div class="grid grid-cols-3 gap-4 mb-2">
+          <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-2xs">
             <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">💵 ยอดเงินสดวันนี้</p>
             <p class="text-xl font-extrabold text-emerald-900 mt-1"><span id="dash-cash">0</span> <span class="text-xs font-normal text-emerald-600">บาท</span></p>
           </div>
-          <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-2xs">
+          <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-2xs">
             <p class="text-[10px] font-bold text-blue-700 uppercase tracking-wide">📱 ยอดโอนเงินวันนี้</p>
             <p class="text-xl font-extrabold text-blue-900 mt-1"><span id="dash-transfer">0</span> <span class="text-xs font-normal text-blue-600">บาท</span></p>
           </div>
-          <div class="bg-amber-950 p-4 rounded-2xl shadow-2xs text-white">
+          <div class="bg-amber-950 p-4 rounded-xl shadow-2xs text-white">
             <p class="text-[10px] font-bold text-amber-400 uppercase tracking-wide">🚀 ยอดรวมทั้งหมดวันนี้</p>
             <p class="text-xl font-extrabold text-amber-300 mt-1"><span id="dash-total">0</span> <span class="text-xs font-normal text-amber-400">บาท</span></p>
           </div>
@@ -121,7 +121,7 @@
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
           <div class="flex justify-between items-center mb-6">
             <div>
-              <h2 class="text-base font-bold text-slate-800">📊 สรุปรายงานยอดขายสะสม</h2>
+              <h2 class="text-base font-bold text-slate-800">📊 ประวัติและสรุปรายงานยอดขายสะสม</h2>
               <p class="text-2xl font-extrabold text-emerald-600 mt-1"><span id="report-total-sales">0</span> <span class="text-sm font-normal text-slate-400">บาท</span></p>
             </div>
             <button onclick="clearSalesHistory()" class="bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer">
@@ -156,7 +156,7 @@
         </div>
       </div>
 
-      <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-4 flex-shrink-0">
+      <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-3 flex-shrink-0">
         <div class="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm text-xs">
           <div class="flex justify-between items-center font-bold text-slate-600">
             <span>ส่วนลดหน้าร้าน</span>
@@ -208,7 +208,7 @@
   </div>
 
   <script>
-    // 🔗 เปลี่ยนตรงนี้เป็นลิงก์ Web App Google Apps Script ของคุณครับ
+    // 🔗 แก้ไขตรงนี้เป็นลิงก์ Web App Google Apps Script ของคุณ
     const API_URL = "https://script.google.com/macros/s/AKfycbxO3YRTyiyXvwx2_bcWM0Vb2ksNyhoDL_gA9bvSKaIOgoRmK0Fj5O1GOparmfl8TIIewQ/exec";
     const ADMIN_PASSWORD = "2026";
 
@@ -301,7 +301,7 @@
       }
     }
 
-    // 📅 ฟังก์ชันล็อกเวลาประเทศไทย (+7 ชั่วโมง) ป้องกันปัญหาระบบคลาวด์อิงเวลาอเมริกา
+    // 📅 ฟังก์ชันล็อกเวลาปัจจุบันล็อกเป็นเวลาประเทศไทย (+7 ชั่วโมง) อย่างแม่นยำ
     function getNowString() {
       const now = new Date();
       const tzOffset = 7 * 60; 
@@ -704,8 +704,10 @@
       const billId = Math.floor(1000 + Math.random() * 9000);
       const methodText = paymentType === 'cash' ? 'เงินสด' : 'โอนเงิน';
       
+      // ดึงโน้ตส่วนลดจากช่องกรอก
       const discountNote = document.getElementById('discount-note')?.value.trim() || "";
       
+      // รวมข้อความบิลเข้าด้วยกันพร้อมหมายเหตุส่วนลด
       const itemsSummary = cart.map(item => `${item.name} x ${item.quantity}`).join(', ') + 
                            ` [${methodText}]` + 
                            (discountNote ? ` 📝 โน้ตส่วนลด: ${discountNote}` : '');
@@ -713,7 +715,7 @@
       const success = await executeCloudAction({
         action: "checkout",
         billId: billId,
-        datetime: getNowString(), // ส่งเวลาประเทศไทย
+        datetime: getNowString(), // ใช้เวลาประเทศไทย
         itemsSummary: itemsSummary,
         total: total,
         cart: cart
@@ -723,9 +725,12 @@
         cart = [];
         document.getElementById('cash-received').value = '';
         document.getElementById('discount-val').value = '';
+        
+        // ล้างช่องกรอกโน้ตให้พร้อมสำหรับออเดอร์ถัดไป
         if(document.getElementById('discount-note')) {
           document.getElementById('discount-note').value = '';
         }
+        
         updateCart();
         
         if (paymentType === 'cash') {
@@ -741,6 +746,7 @@
       await fetchDataFromCloud();
       showLoading(false);
       
+      // Auto-Sync ดึงข้อมูลเบื้องหลังทุก 30 วินาที
       setInterval(fetchDataFromCloud, 30000);
     };
   </script>
