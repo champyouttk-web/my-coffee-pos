@@ -133,7 +133,6 @@
                 ❌ ล้างประวัติ
               </button>
             </div>
-
           </div>
           <div class="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
             <table class="w-full text-left border-collapse text-xs">
@@ -180,7 +179,7 @@
 
         <div class="flex justify-between text-lg font-bold text-slate-900 border-b border-slate-200 pb-3">
           <span class="text-slate-500 font-medium text-sm">ยอดสุทธิรวมทั้งสิ้น:</span>
-          <span class="text-xl text-amber-800"><span id="total-price">0</span> .-</span>
+          <span class="text-xl text-amber-800"><span id="total-price">0.00</span> .-</span>
         </div>
         
         <div class="grid grid-cols-2 gap-3">
@@ -229,7 +228,6 @@
   </div>
 
   <script>
-    // 🔗 ลิงก์ใหม่ของคุณใส่ไว้ให้เรียบร้อยแล้วครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbxO3YRTyiyXvwx2_bcWM0Vb2ksNyhoDL_gA9bvSKaIOgoRmK0Fj5O1GOparmfl8TIIewQ/exec";
     const ADMIN_PASSWORD = "2026";
 
@@ -621,8 +619,11 @@
       }
     }
 
-    function addToCart(product) {
-      const productId = product.id;
+    /* 🟢 [FIXED] ฟังก์ชันแก้บั๊กเด่น: รับค่า ID จากปุ่มกดหน้า POS แล้วมาค้นหา Object เต็มของสินค้าเพื่อใส่ตะกร้า */
+    function addToCart(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return; 
+
       const cartItem = cart.find(item => item.id === productId);
       if (cartItem) {
         cartItem.quantity += 1;
@@ -647,29 +648,35 @@
       updateCart();
     }
 
-function updateCart() {
+    /* 🟢 [FIXED] ฟังก์ชันแก้บั๊ก NaN: บังคับแปลงตัวเลขและฟอร์แมตทศนิยมเสมอ ป้องกันค่าสูญหาย */
+    function updateCart() {
       const container = document.getElementById('cart-items');
       if (cart.length === 0) {
         container.innerHTML = `<p class="text-slate-400 text-center py-12 text-xs">ยังไม่มีรายการสินค้าในตะกร้า</p>`;
-        document.getElementById('total-price').innerText = '0.00'; // เปลี่ยนเป็นทศนิยมให้ฟอร์แมตตรงกัน
+        document.getElementById('total-price').innerText = '0.00';
         calculateChange();
         return;
       }
+      
       let total = 0;
       container.innerHTML = cart.map(item => {
-        const subTotal = item.price * item.quantity;
+        const price = Number(item.price) || 0;
+        const qty = Number(item.quantity) || 0;
+        const subTotal = price * qty;
+        
         total += subTotal;
+        
         return `
           <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs shadow-sm">
             <div class="w-1/2 min-w-0">
               <div class="font-bold text-slate-800 truncate">${item.name}</div>
-              <div class="text-amber-700 font-medium mt-0.5">${item.price} บ.</div>
+              <div class="text-amber-700 font-medium mt-0.5">${price} บ.</div>
             </div>
             <div class="flex items-center space-x-1.5 w-1/2 justify-end shrink-0">
               <button onclick="changeQuantity(${item.id}, -1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all cursor-pointer">-</button>
-              <span class="font-bold w-4 text-center text-slate-800">${item.quantity}</span>
+              <span class="font-bold w-4 text-center text-slate-800">${qty}</span>
               <button onclick="changeQuantity(${item.id}, 1)" class="w-5 h-5 bg-white border border-slate-200 rounded-md font-bold hover:bg-slate-100 text-slate-600 transition-all cursor-pointer">+</button>
-              <span class="font-bold ml-2 text-right text-slate-700">${subTotal}.-</span>
+              <span class="font-bold ml-2 text-right text-slate-700">${subTotal.toFixed(2)}.-</span>
             </div>
           </div>
         `;
@@ -686,7 +693,6 @@ function updateCart() {
       }
 
       finalTotal = Math.max(0, finalTotal);
-      // เปลี่ยนจุดนี้: ให้แสดงผลเป็นทศนิยม .2 ตำแหน่งเหมือนกันทุกฟังก์ชันเพื่อไม่ให้เกิด NaN
       document.getElementById('total-price').innerText = finalTotal.toFixed(2); 
       calculateChange();
     }
@@ -724,7 +730,6 @@ function updateCart() {
 
       const billId = Math.floor(1000 + Math.random() * 9000);
       const methodText = paymentType === 'cash' ? 'เงินสด' : 'โอนเงิน';
-      
       const discountNote = document.getElementById('discount-note')?.value.trim() || "";
       
       const itemsSummary = cart.map(item => `${item.name} x ${item.quantity}`).join(', ') + 
@@ -757,55 +762,46 @@ function updateCart() {
       }
     }
 
-    // ฟังก์ชันจัดการ Modal สรุปยอด
-function openSummaryModal() {
-  // 1. ดึงวันที่ปัจจุบันของไทย (YYYY-MM-DD)
-  const today = getNowString().split(' ')[0]; 
-  
-  // 2. กรองเฉพาะบิลของวันนี้เท่านั้น (โดยเช็คจาก string วันที่)
-  const todaySales = salesHistory.filter(bill => {
-      return String(bill.datetime).startsWith(today);
-  });
-  
-  // 3. ดึงเวลาบิลแรก และบิลล่าสุดของวันนี้
-  let timeText = "ยังไม่มีออเดอร์";
-  if (todaySales.length > 0) {
-      const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
-      const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
-      timeText = `${firstTime} ถึง ${lastTime} น.`;
-  }
-  
-  // 4. สรุปรวมจำนวนสินค้าที่ขายได้
-  let itemCounts = {};
-  todaySales.forEach(sale => {
-    let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
-    itemsStr = itemsStr.split('📝')[0]; 
-    
-    const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
-    items.forEach(itemStr => {
-       const parts = itemStr.split(' x ');
-       if (parts.length === 2) {
-          const name = parts[0].trim();
-          const qty = parseInt(parts[1], 10) || 0;
-          itemCounts[name] = (itemCounts[name] || 0) + qty;
-       }
-    });
-  });
+    function openSummaryModal() {
+      const today = getNowString().split(' ')[0]; 
+      const todaySales = salesHistory.filter(bill => {
+          return String(bill.datetime).startsWith(today);
+      });
+      
+      let timeText = "ยังไม่มีออเดอร์";
+      if (todaySales.length > 0) {
+          const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
+          const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
+          timeText = `${firstTime} ถึง ${lastTime} น.`;
+      }
+      
+      let itemCounts = {};
+      todaySales.forEach(sale => {
+        let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
+        itemsStr = itemsStr.split('📝')[0]; 
+        
+        const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
+        items.forEach(itemStr => {
+           const parts = itemStr.split(' x ');
+           if (parts.length === 2) {
+              const name = parts[0].trim();
+              const qty = parseInt(parts[1], 10) || 0;
+              itemCounts[name] = (itemCounts[name] || 0) + qty;
+           }
+        });
+      });
 
-  // 5. จัดข้อความรายการสินค้า
-  let itemsText = "";
-  for (const [name, qty] of Object.entries(itemCounts)) {
-    itemsText += `- ${name} : ${qty}\n`;
-  }
-  if (itemsText === "") itemsText = "- ยังไม่มีรายการขายวันนี้\n";
+      let itemsText = "";
+      for (const [name, qty] of Object.entries(itemCounts)) {
+        itemsText += `- ${name} : ${qty}\n`;
+      }
+      if (itemsText === "") itemsText = "- ยังไม่มีรายการขายวันนี้\n";
 
-  // 6. ดึงยอดจากกล่อง Dashboard ที่แสดงผลอยู่บนหน้าจอ
-  const cash = document.getElementById('dash-cash').innerText;
-  const transfer = document.getElementById('dash-transfer').innerText;
-  const total = document.getElementById('dash-total').innerText;
+      const cash = document.getElementById('dash-cash').innerText;
+      const transfer = document.getElementById('dash-transfer').innerText;
+      const total = document.getElementById('dash-total').innerText;
 
-  // 7. สร้าง Template ข้อความ (ข้อมูลจะดึงมาตามจริง)
-  const template = `📊 สรุปยอดขายประจำวัน (${today})
+      const template = `📊 สรุปยอดขายประจำวัน (${today})
 ⏰ เวลาทำการ: ${timeText}
 
 💵 ยอดเงินสด: ${cash} บาท
@@ -815,9 +811,9 @@ function openSummaryModal() {
 ☕ รายการสินค้าที่ขายได้วันนี้:
 ${itemsText}`;
 
-  document.getElementById('summary-text').value = template;
-  document.getElementById('summary-modal').classList.remove('hidden');
-}
+      document.getElementById('summary-text').value = template;
+      document.getElementById('summary-modal').classList.remove('hidden');
+    }
 
     function closeSummaryModal() {
       document.getElementById('summary-modal').classList.add('hidden');
