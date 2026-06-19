@@ -647,11 +647,11 @@
       updateCart();
     }
 
-    function updateCart() {
+function updateCart() {
       const container = document.getElementById('cart-items');
       if (cart.length === 0) {
         container.innerHTML = `<p class="text-slate-400 text-center py-12 text-xs">ยังไม่มีรายการสินค้าในตะกร้า</p>`;
-        document.getElementById('total-price').innerText = '0';
+        document.getElementById('total-price').innerText = '0.00'; // เปลี่ยนเป็นทศนิยมให้ฟอร์แมตตรงกัน
         calculateChange();
         return;
       }
@@ -686,7 +686,8 @@
       }
 
       finalTotal = Math.max(0, finalTotal);
-      document.getElementById('total-price').innerText = finalTotal.toFixed(0);
+      // เปลี่ยนจุดนี้: ให้แสดงผลเป็นทศนิยม .2 ตำแหน่งเหมือนกันทุกฟังก์ชันเพื่อไม่ให้เกิด NaN
+      document.getElementById('total-price').innerText = finalTotal.toFixed(2); 
       calculateChange();
     }
 
