@@ -39,10 +39,6 @@
           <button onclick="switchMode('admin')" id="btn-admin" class="text-slate-600 hover:text-slate-900 px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer">⚙️ หลังบ้าน</button>
           <button onclick="switchMode('report')" id="btn-report" class="text-slate-600 hover:text-slate-900 px-4 py-2 rounded-lg font-semibold text-xs transition-all cursor-pointer">📊 ประวัติการขาย</button>
           
-          <button onclick="openSummaryModal()" class="ml-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer">
-            📊 สรุปยอดวันนี้
-          </button>
-
           <button id="toggle-cart-btn" onclick="toggleCartPanel()" class="ml-2 bg-amber-800 hover:bg-amber-950 text-white font-bold text-xs px-3 py-2 rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer">
             <span id="toggle-cart-icon">👉</span> <span id="toggle-cart-text">ซ่อนตะกร้า</span>
           </button>
@@ -130,6 +126,9 @@
             </div>
             
             <div class="flex gap-2">
+              <button onclick="openSummaryModal()" class="bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-bold py-2 px-4 rounded-xl transition-all shadow-sm cursor-pointer border border-amber-200">
+                📋 สร้างข้อความสรุปยอด
+              </button>
               <button onclick="clearSalesHistory()" class="bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer border border-red-100">
                 ❌ ล้างประวัติ
               </button>
@@ -217,9 +216,9 @@
   <div id="summary-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-sm z-50 flex justify-center items-center">
     <div class="bg-white p-6 rounded-2xl w-[28rem] shadow-xl">
       <h3 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">📋 ข้อความสรุปยอดประจำวัน</h3>
-      <p class="text-[11px] text-slate-500 mb-3">ตรวจสอบข้อมูลยอดขายหรือแก้ไขก่อนคัดลอกส่งต่อ</p>
+      <p class="text-[11px] text-slate-500 mb-3">แก้ไขข้อมูลตรงช่องว่าง (____) ให้เรียบร้อยก่อนกดคัดลอก</p>
       
-      <textarea id="summary-text" class="w-full h-80 p-3 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-amber-500 mb-4 bg-slate-50 leading-relaxed"></textarea>
+      <textarea id="summary-text" class="w-full h-64 p-3 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 focus:outline-none focus:border-amber-500 mb-4 bg-slate-50 leading-relaxed"></textarea>
       
       <div class="flex gap-3">
         <button onclick="copySummary()" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm">📋 คัดลอกข้อความ</button>
@@ -620,6 +619,7 @@
       }
     }
 
+    /* 🟢 [FIXED] ฟังก์ชันแก้บั๊กเด่น: รับค่า ID จากปุ่มกดหน้า POS แล้วมาค้นหา Object เต็มของสินค้าเพื่อใส่ตะกร้า */
     function addToCart(productId) {
       const product = products.find(p => p.id === productId);
       if (!product) return; 
@@ -648,6 +648,7 @@
       updateCart();
     }
 
+    /* 🟢 [FIXED] ฟังก์ชันแก้บั๊ก NaN: บังคับแปลงตัวเลขและฟอร์แมตทศนิยมเสมอ ป้องกันค่าสูญหาย */
     function updateCart() {
       const container = document.getElementById('cart-items');
       if (cart.length === 0) {
@@ -729,21 +730,11 @@
 
       const billId = Math.floor(1000 + Math.random() * 9000);
       const methodText = paymentType === 'cash' ? 'เงินสด' : 'โอนเงิน';
-      
-      // ดึงค่าส่วนลดมาบันทึก
-      const discountValRaw = parseFloat(document.getElementById('discount-val').value) || 0;
-      const discountType = document.getElementById('discount-type').value;
       const discountNote = document.getElementById('discount-note')?.value.trim() || "";
       
-      let discountStr = "";
-      if (discountValRaw > 0 || discountNote) {
-        let valText = discountValRaw > 0 ? `ลด ${discountValRaw}${discountType === 'percent' ? '%' : 'บ.'}` : "";
-        let noteText = discountNote ? ` (${discountNote})` : "";
-        discountStr = ` | 🏷️ ส่วนลด: ${valText}${noteText}`;
-      }
-      
       const itemsSummary = cart.map(item => `${item.name} x ${item.quantity}`).join(', ') + 
-                           ` [${methodText}]` + discountStr;
+                           ` [${methodText}]` + 
+                           (discountNote ? ` 📝 โน้ตส่วนลด: ${discountNote}` : '');
       
       const success = await executeCloudAction({
         action: "checkout",
@@ -773,28 +764,22 @@
 
     function openSummaryModal() {
       const today = getNowString().split(' ')[0]; 
-      // ดึงเฉพาะบิลของวันนี้
-      const todaySales = salesHistory.filter(bill => String(bill.datetime).startsWith(today));
+      const todaySales = salesHistory.filter(bill => {
+          return String(bill.datetime).startsWith(today);
+      });
       
-      let cashTotal = 0;
-      let transferTotal = 0;
-      let netTotal = 0;
-      let discountCount = 0;
+      let timeText = "ยังไม่มีออเดอร์";
+      if (todaySales.length > 0) {
+          const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
+          const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
+          timeText = `${firstTime} ถึง ${lastTime} น.`;
+      }
+      
       let itemCounts = {};
-      let discountDetails = [];
-
       todaySales.forEach(sale => {
-        netTotal += (sale.total || 0);
+        let itemsStr = sale.itemsSummary.replace(/\[เงินสด\]|\[โอนเงิน\]/g, '');
+        itemsStr = itemsStr.split('📝')[0]; 
         
-        // แยกเงินสด - โอนเงิน
-        if (sale.itemsSummary.includes('[โอนเงิน]')) {
-          transferTotal += (sale.total || 0);
-        } else {
-          cashTotal += (sale.total || 0);
-        }
-
-        // นับจำนวนสินค้า (ตัดข้อความตั้งแต่ [เงินสด] หรือ [โอนเงิน] ทิ้งไปก่อน)
-        let itemsStr = sale.itemsSummary.split('[')[0]; 
         const items = itemsStr.split(',').map(i => i.trim()).filter(i => i);
         items.forEach(itemStr => {
            const parts = itemStr.split(' x ');
@@ -804,45 +789,26 @@
               itemCounts[name] = (itemCounts[name] || 0) + qty;
            }
         });
-
-        // เก็บบันทึกส่วนลด
-        if (sale.itemsSummary.includes('🏷️ ส่วนลด:') || sale.itemsSummary.includes('📝 โน้ตส่วนลด:')) {
-          discountCount++;
-          let note = sale.itemsSummary.split(/(?:🏷️ ส่วนลด:|📝 โน้ตส่วนลด:)/)[1];
-          if(note) discountDetails.push(`- บิล #${sale.billId}: ${note.trim()}`);
-        }
       });
 
-      // จัดฟอร์แมตข้อความจำนวนสินค้า
       let itemsText = "";
       for (const [name, qty] of Object.entries(itemCounts)) {
         itemsText += `- ${name} : ${qty}\n`;
       }
       if (itemsText === "") itemsText = "- ยังไม่มีรายการขายวันนี้\n";
 
-      // จัดฟอร์แมตข้อความส่วนลด
-      let discountText = discountCount > 0 
-        ? `\n🎁 รายการที่มีส่วนลด (${discountCount} บิล):\n${discountDetails.join('\n')}` 
-        : "\n🎁 ส่วนลด: ไม่มีรายการใช้ส่วนลดวันนี้";
+      const cash = document.getElementById('dash-cash').innerText;
+      const transfer = document.getElementById('dash-transfer').innerText;
+      const total = document.getElementById('dash-total').innerText;
 
-      // คำนวณเวลาทำการ (บิลแรก - บิลสุดท้าย)
-      let timeText = "ยังไม่มีออเดอร์";
-      if (todaySales.length > 0) {
-          const firstTime = todaySales[0].datetime.split(' ')[1].substring(0, 5); 
-          const lastTime = todaySales[todaySales.length - 1].datetime.split(' ')[1].substring(0, 5);
-          timeText = `${firstTime} ถึง ${lastTime} น.`;
-      }
-
-      // สร้าง Template ข้อความสรุป
       const template = `📊 สรุปยอดขายประจำวัน (${today})
 ⏰ เวลาทำการ: ${timeText}
 
-💵 ยอดเงินสด: ${cashTotal.toLocaleString()} บาท
-📱 ยอดโอน: ${transferTotal.toLocaleString()} บาท
-💰 ยอดสุทธิรวม: ${netTotal.toLocaleString()} บาท
-${discountText}
+💵 ยอดเงินสด: ${cash} บาท
+📱 ยอดโอน: ${transfer} บาท
+💰 ยอดสุทธิรวม: ${total} บาท
 
-☕ รวมสินค้าที่ขายได้วันนี้:
+☕ รายการสินค้าที่ขายได้วันนี้:
 ${itemsText}`;
 
       document.getElementById('summary-text').value = template;
@@ -872,4 +838,4 @@ ${itemsText}`;
     };
   </script>
 </body>
-</html>      
+</html>
